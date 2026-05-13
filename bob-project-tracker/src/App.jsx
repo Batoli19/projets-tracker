@@ -19,8 +19,11 @@ import {
   Home,
   Layers3,
   Lock,
+  LogIn,
+  LogOut,
   Menu,
   Moon,
+  Plus,
   Search,
   Settings,
   Share2,
@@ -68,6 +71,8 @@ const navItems = [
 ]
 
 const themeStorageKey = 'bob-command-centre-theme'
+const authStorageKey = 'bob-command-centre-auth'
+const programmeStorageKey = 'bob-command-centre-programmes'
 const gold = '#C9A227'
 const green = '#1F8A5B'
 const amber = '#B7791F'
@@ -76,6 +81,32 @@ const blue = '#2563EB'
 const purple = '#7C3AED'
 function cx(...classes) {
   return classes.filter(Boolean).join(' ')
+}
+
+function createProgrammeId(name) {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `programme-${Date.now()}`
+}
+
+function loadStoredProgrammes() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(programmeStorageKey) || '[]')
+    return Array.isArray(saved) ? saved : []
+  } catch {
+    return []
+  }
+}
+
+function useAuthSession() {
+  const [isAuthenticated, setAuthenticated] = useState(() => localStorage.getItem(authStorageKey) === 'active')
+  function login() {
+    localStorage.setItem(authStorageKey, 'active')
+    setAuthenticated(true)
+  }
+  function logout() {
+    localStorage.removeItem(authStorageKey)
+    setAuthenticated(false)
+  }
+  return { isAuthenticated, login, logout }
 }
 
 function useTheme() {
@@ -291,7 +322,7 @@ function SelectField({ label, value, onChange, options }) {
   )
 }
 
-function Sidebar({ mobileOpen, closeMobile }) {
+function Sidebar({ mobileOpen, closeMobile, onLogout }) {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   return (
@@ -324,7 +355,7 @@ function Sidebar({ mobileOpen, closeMobile }) {
             <div className="user-popover">
               <Link to="/profile" onClick={closeMobile}>View Profile</Link>
               <Link to="/settings" onClick={closeMobile}>Preferences</Link>
-              <button type="button">Sign out</button>
+              <button type="button" onClick={onLogout}><LogOut size={15} /> Sign out</button>
             </div>
           ) : null}
         </div>
@@ -469,12 +500,12 @@ function Header({ theme, setTheme, openMobile }) {
   )
 }
 
-function AppLayout() {
+function AppLayout({ onLogout }) {
   const { theme, setTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   return (
     <div className="app-shell">
-      <Sidebar mobileOpen={mobileOpen} closeMobile={() => setMobileOpen(false)} />
+      <Sidebar mobileOpen={mobileOpen} closeMobile={() => setMobileOpen(false)} onLogout={onLogout} />
       <div className="app-main">
         <Header theme={theme} setTheme={setTheme} openMobile={() => setMobileOpen(true)} />
         <main className="content-area">
@@ -664,17 +695,55 @@ function StrategicPortfolio() {
 function Programmes() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const [localProgrammes, setLocalProgrammes] = useState(loadStoredProgrammes)
   const [query, setQuery] = useState('')
   const [view, setView] = useState('table')
   const [filters, setFilters] = useState({ status: 'All Statuses', risk: 'All Risks', mandate: 'All Mandates', sponsor: 'All Sponsors' })
   const [modal, setModal] = useState(false)
-  const filtered = programmes.filter((p) =>
+  const [draft, setDraft] = useState({
+    name: 'Digital Reserve Operations Dashboard',
+    description: 'Consolidate operational dashboards, reporting cadence, and executive visibility across priority reserve-management workstreams.',
+    mandate: 'Operational Resilience',
+    owner: 'K. Maolosi',
+    sponsor: 'K. Maolosi',
+  })
+  const allProgrammes = useMemo(() => [...localProgrammes, ...programmes], [localProgrammes])
+  const filtered = allProgrammes.filter((p) =>
     `${p.name} ${p.description} ${p.owner} ${p.sponsor}`.toLowerCase().includes(query.toLowerCase()) &&
     (filters.status === 'All Statuses' || p.status === filters.status) &&
     (filters.risk === 'All Risks' || p.riskLevel === filters.risk) &&
     (filters.mandate === 'All Mandates' || p.mandate === filters.mandate) &&
     (filters.sponsor === 'All Sponsors' || p.sponsor === filters.sponsor)
   )
+  function createProgramme() {
+    const name = draft.name.trim()
+    if (!name) return
+    const newProgramme = {
+      id: `${createProgrammeId(name)}-${Date.now()}`,
+      name,
+      description: draft.description.trim() || 'New strategic programme created during the demo session.',
+      mandate: draft.mandate,
+      owner: draft.owner,
+      ownerRole: 'Programme Owner',
+      sponsor: draft.sponsor,
+      status: 'On Track',
+      riskLevel: 'Low',
+      progress: 5,
+      confidence: 72,
+      budgetStatus: 'On Track',
+      budget: 'BWP 0.0M',
+      nextMilestone: 'Charter Approval',
+      milestoneDate: '30 Jun 2026',
+      lastUpdated: '13 May 2026',
+    }
+    const nextProgrammes = [newProgramme, ...localProgrammes]
+    setLocalProgrammes(nextProgrammes)
+    localStorage.setItem(programmeStorageKey, JSON.stringify(nextProgrammes))
+    setFilters({ status: 'All Statuses', risk: 'All Risks', mandate: 'All Mandates', sponsor: 'All Sponsors' })
+    setQuery(name)
+    setModal(false)
+    showToast({ title: 'Programme created', message: `${name} was added to the register.` })
+  }
   return (
     <>
       <PageHeader title="Programmes" subtitle="Operational view of all strategic programmes, owners, milestones, risks, and delivery confidence.">
@@ -686,7 +755,7 @@ function Programmes() {
         <SelectField label="Status" value={filters.status} onChange={(status) => setFilters({ ...filters, status })} options={['All Statuses', 'On Track', 'At Risk', 'Off Track', 'Completed']} />
         <SelectField label="Risk Level" value={filters.risk} onChange={(risk) => setFilters({ ...filters, risk })} options={['All Risks', 'Low', 'Medium', 'High', 'Critical']} />
         <SelectField label="Mandate" value={filters.mandate} onChange={(mandate) => setFilters({ ...filters, mandate })} options={['All Mandates', ...mandates]} />
-        <SelectField label="Sponsor" value={filters.sponsor} onChange={(sponsor) => setFilters({ ...filters, sponsor })} options={['All Sponsors', ...new Set(programmes.map((p) => p.sponsor))]} />
+        <SelectField label="Sponsor" value={filters.sponsor} onChange={(sponsor) => setFilters({ ...filters, sponsor })} options={['All Sponsors', ...new Set(allProgrammes.map((p) => p.sponsor))]} />
         <div className="segmented-control"><button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}>Table</button><button className={view === 'cards' ? 'active' : ''} onClick={() => setView('cards')}>Cards</button></div>
       </FilterBar>
       {view === 'cards' ? (
@@ -696,7 +765,16 @@ function Programmes() {
       ) : (
         <DataTable rows={filtered} onRowClick={(row) => navigate(`/programmes/${row.id}`)} columns={programmeColumns()} />
       )}
-      {modal ? <Modal title="Create Programme" onClose={() => setModal(false)} footer={<button className="button primary" onClick={() => { setModal(false); showToast({ title: 'Programme created', message: 'Draft programme has been added locally.' }) }}>Create Draft</button>}><div className="form-grid"><input placeholder="Programme name" /><textarea placeholder="Strategic objective" /></div></Modal> : null}
+      {modal ? (
+        <Modal title="Create Programme" onClose={() => setModal(false)} footer={<><button className="button secondary" onClick={() => setModal(false)}>Cancel</button><button className="button primary" onClick={createProgramme}><Plus size={16} /> Add Record</button></>}>
+          <div className="form-grid">
+            <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Programme name" />
+            <textarea value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} placeholder="Strategic objective" />
+            <SelectField label="Mandate" value={draft.mandate} onChange={(mandate) => setDraft({ ...draft, mandate })} options={mandates} />
+            <SelectField label="Owner" value={draft.owner} onChange={(owner) => setDraft({ ...draft, owner, sponsor: owner })} options={[...new Set(programmes.map((p) => p.owner))]} />
+          </div>
+        </Modal>
+      ) : null}
     </>
   )
 }
@@ -731,7 +809,7 @@ function ProgrammeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const programme = programmes.find((p) => p.id === id) || programmes.find((p) => p.id === 'payments-modernisation-programme')
+  const programme = [...loadStoredProgrammes(), ...programmes].find((p) => p.id === id) || programmes.find((p) => p.id === 'payments-modernisation-programme')
   const [doc, setDoc] = useState(null)
   const [drawer, setDrawer] = useState(null)
   return (
@@ -1009,8 +1087,43 @@ function UtilityPage({ title, subtitle, calendar, documents, insights }) {
   )
 }
 
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState('demo@bankofbotswana.bw')
+  const [password, setPassword] = useState('demo123')
+  function submit(event) {
+    event.preventDefault()
+    onLogin()
+  }
+  return (
+    <main className="login-screen">
+      <section className="login-panel">
+        <div className="brand-block login-brand">
+          <div className="seal">BoB</div>
+          <div className="bank-title">BANK OF BOTSWANA</div>
+          <div className="bank-subtitle">Strategic Programme Command Centre</div>
+        </div>
+        <form className="login-form" onSubmit={submit}>
+          <span className="login-kicker"><Lock size={16} /> Secure demo access</span>
+          <h1>Sign in</h1>
+          <p>Use the prefilled demo credentials, then create a new programme record from the Programmes page.</p>
+          <label>
+            <span>Email</span>
+            <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required />
+          </label>
+          <button className="button primary full" type="submit"><LogIn size={17} /> Login</button>
+        </form>
+      </section>
+    </main>
+  )
+}
+
 function App() {
-  return <AppLayout />
+  const auth = useAuthSession()
+  return auth.isAuthenticated ? <AppLayout onLogout={auth.logout} /> : <LoginScreen onLogin={auth.login} />
 }
 
 export default App
