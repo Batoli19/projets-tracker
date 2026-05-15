@@ -101,6 +101,14 @@ button { cursor: pointer; }
 }
 .logo-block strong { font-size: 34px; line-height: 1.05; color: #FFF; }
 .logo-block small { color: #F0C552; font-size: 11px; letter-spacing: .08em; font-weight: 700; }
+.logo-required {
+  border: 1px dashed rgba(255,255,255,.35);
+  border-radius: 10px;
+  padding: 10px;
+  color: #fff;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
 
 .sidebar nav { padding: 12px 10px; display: grid; gap: 6px; }
 .nav-link {
@@ -190,6 +198,32 @@ tbody tr:hover td { background: var(--surface-soft); }
 .person { display: flex; align-items: center; gap: 8px; }
 .danger { color: var(--red); font-weight: 700; }
 .row-actions { display: grid; gap: 6px; }
+.action-menu { position: relative; }
+.action-menu summary {
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface);
+}
+.action-menu[open] summary { margin-bottom: 6px; }
+.action-menu a,
+.action-menu button {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: var(--surface);
+  color: var(--text-2);
+  text-align: left;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
 
 .badge { min-height: 26px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; text-transform: uppercase; white-space: nowrap; }
 .tone-green { color: var(--green); background: var(--green-soft); border-color: rgba(31,138,91,.24); }
@@ -292,13 +326,24 @@ tbody tr:hover td { background: var(--surface-soft); }
 .login-brand .logo-block { border-bottom: 0; padding: 0; }
 .login-brand .logo-block strong { font-size: 42px; }
 .login-brand .logo-block small { font-size: 14px; }
+.brand-tagline { color: #F0C552; font-weight: 700; margin-top: 16px; }
+.brand-subtext { color: #C8D5EA; margin: 6px 0 0; line-height: 1.5; }
 .login-form { display: grid; gap: 12px; align-content: center; padding: 32px; }
 .login-form h1 { margin: 0; font-size: 40px; }
 .login-form p { margin: 0; color: var(--text-2); }
 .login-form label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
 .demo-buttons { border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); padding: 12px; display: grid; gap: 8px; }
 .demo-buttons h4 { margin: 0; }
+.demo-role { justify-content: flex-start; flex-direction: column; align-items: flex-start; min-height: 54px; }
+.demo-role small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.manager-role { background: #FFF7E0; border-color: #EED89C; }
+.officer-role { background: #EFF6FF; border-color: #CFE2FF; }
 .login-form small { color: var(--muted); line-height: 1.5; }
+.settings-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.workflow-pipeline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--text-2); font-size: 13px; }
+.workflow-pipeline span { border: 1px solid var(--border); border-radius: 999px; padding: 4px 8px; background: var(--surface-soft); }
+.chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-list span { border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; font-size: 12px; background: var(--surface-soft); color: var(--text-2); }
 
 @media (max-width: 1440px) {
   .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -325,6 +370,7 @@ tbody tr:hover td { background: var(--surface-soft); }
   .search-input { min-width: 0; width: 100%; }
   .topbar { padding: 10px 12px; }
   .title-group strong { font-size: 20px; }
+  .settings-grid { grid-template-columns: 1fr; }
   .user-chip { display: none; }
   .login-shell { grid-template-columns: 1fr; }
   .login-brand { min-height: 180px; }
